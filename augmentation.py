@@ -1,5 +1,5 @@
 """
-Coior Augmentation: Autocontrast, Brightness, Color, Contrast, Equalize, Posterize, Sharpness, Solarize, SolarizeAdd
+Color Augmentation: Autocontrast, Brightness, Color, Contrast, Equalize, Posterize, Sharpness, Solarize, SolarizeAdd
 
 Geometric Augmentation: Rotate_BBox, ShearX_BBox, ShearY_BBox, TranslateX_BBox, TranslateY_BBox, Flip
 
