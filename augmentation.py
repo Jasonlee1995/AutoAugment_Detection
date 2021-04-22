@@ -1,7 +1,7 @@
 """
-Color Augmentation: Autocontrast, Brightness, Color, Contrast, Equalize, Posterize, Sharpness, Solarize, SolarizeAdd
+Coior Augmentation: Autocontrast, Brightness, Color, Contrast, Equalize, Posterize, Sharpness, Solarize, SolarizeAdd
 
-Geometric Augmentation: Rotate_BBox, ShearX_BBox, ShearY_BBox, TranslateX_BBox, TranslateY_BBox, Flip
+Geometric Augmentation: Rotate_BBox, ShearX_BBox, ShearY_BBox, TranslateX_BBox, TranslateY_BBox
 
 Mask Augmentation: Cutout
 
@@ -349,28 +349,6 @@ class TranslateY_BBox(torch.nn.Module):
                 return translate_image, translate_bbox
         else:
             return image, bboxs
-        
-        
-class Flip(torch.nn.Module):
-    """
-    Apply horizontal flip on image and bboxes.
-    Assume the coords are given min_x, min_y, max_x, max_y.
-    Both applied to image and bboxes.
-    """
-    def __init__(self, p=0.5):
-        super().__init__()
-        self.p = p
-
-    def forward(self, image, bboxs):
-        if torch.rand(1) < self.p:
-            flip_image = ImageOps.mirror(image)
-            if bboxs == None:
-                return flip_image, bboxs
-            else:
-                flip_bbox = functional.flip(image, bboxs)
-                return flip_image, flip_bbox
-        else:
-            image, bboxs
     
     
 ### Mask Augmentation

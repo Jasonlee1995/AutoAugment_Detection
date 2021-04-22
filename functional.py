@@ -96,11 +96,13 @@ def translate_bbox(img, bboxs, pixels, replace, shift_horizontal):
         for bbox in bboxs:
             min_x, min_y, max_x, max_y = bbox
             translate_min_x, translate_max_x = torch.clamp(min_x+pixels, 0, w), torch.clamp(max_x+pixels, 0, w)
-            translate_bboxs.append(torch.LongTensor([translate_min_x, min_y, translate_max_x, max_y]).float())
+            translate_min_x, translate_max_x = int(translate_min_x.item()), int(translate_max_x.item())
+            translate_bboxs.append(torch.FloatTensor([translate_min_x, min_y, translate_max_x, max_y]))
     else:
         for bbox in bboxs:
             min_x, min_y, max_x, max_y = bbox
             translate_min_y, translate_max_y = torch.clamp(min_y+pixels, 0, h), torch.clamp(max_y+pixels, 0, h)
+            translate_min_y, translate_max_y = int(translate_min_y.item()), int(translate_max_y.item())
             translate_bboxs.append(torch.FloatTensor([min_x, translate_min_y, max_x, translate_max_y]))
     return torch.stack(translate_bboxs)
 
@@ -192,18 +194,6 @@ def translate_only_bboxes(img, bboxs, p, pixels, replace, shift_horizontal):
             translate_img[:, min_y:max_y+1, min_x:max_x+1] = F.pil_to_tensor(bbox_tran_img)
     
     return F.to_pil_image(torch.where(translate_img != 0, translate_img, img))
-
-
-def flip(img, bboxs):
-    img = F.pil_to_tensor(img)
-    _, h, w = img.shape
-    
-    flip_bboxs = []
-    for bbox in bboxs:
-        min_x, min_y, max_x, max_y = bbox
-        flip_min_x, flip_max_x = w-min_x, w-max_x
-        flip_bboxs.append(torch.FloatTensor([flip_max_x, min_y, flip_min_x, max_y]))
-    return torch.stack(flip_bboxs)
 
 
 def flip_only_bboxes(img, bboxs, p):
