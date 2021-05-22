@@ -1,26 +1,15 @@
-import torch
+import torch, random
 from augmentation import *
 
 
 M = 10
 
 color_range = torch.arange(0.1, 1.9+1e-10, (1.9-0.1)/M).tolist()
+rotate_range = torch.arange(0, 30+1e-10, (30-0)/M).tolist()
+shear_range = torch.arange(0, 0.3+1e-10, (0.3-0)/M).tolist()
+translate_range = torch.arange(0, 250+1e-10, (250-0)/M).tolist()
+translate_bbox_range = torch.arange(0, 120+1e-10, (120-0)/M).tolist()
 
-def rotate_range():
-    if torch.rand(1) < 0.5: return torch.arange(0, 30+1e-10, (30-0)/M).tolist()
-    return torch.arange(0, -30-1e-10, (-30-0)/M).tolist()
-
-def shear_range():
-    if torch.rand(1) < 0.5: return torch.arange(0, 0.3+1e-10, (0.3-0)/M).tolist()
-    return torch.arange(0, -0.3-1e-10, (-0.3-0)/M).tolist()
-
-def translate_range():
-    if torch.rand(1) < 0.5: return torch.arange(0, 250+1e-10, (250-0)/M).tolist()
-    return torch.arange(0, -250-1e-10, (-250-0)/M).tolist()
-
-def translate_bbox_range():
-    if torch.rand(1) < 0.5: return torch.arange(0, 120+1e-10, (120-0)/M).tolist()
-    return torch.arange(0, -120-1e-10, (-120-0)/M).tolist()
 
 Mag = {'Brightness' : color_range, 'Color' : color_range, 'Contrast' : color_range, 
        'Posterize' : torch.arange(4, 8+1e-10, (8-4)/M).tolist(), 'Sharpness' : color_range, 
@@ -40,77 +29,139 @@ Mag = {'Brightness' : color_range, 'Color' : color_range, 'Contrast' : color_ran
       }
 
 
+Fun = {'AutoContrast' : AutoContrast, 'Brightness' : Brightness, 'Color' : Color, 'Contrast' : Contrast, 'Equalize' : Equalize, 
+       'Posterize' : Posterize, 'Sharpness' : Sharpness, 'Solarize' : Solarize, 'SolarizeAdd' : SolarizeAdd,
+       
+       'Cutout' : Cutout,
+       
+       'Rotate_BBox' : Rotate_BBox, 'ShearX_BBox' : ShearX_BBox, 'ShearY_BBox' : ShearY_BBox,
+       'TranslateX_BBox' : TranslateX_BBox, 'TranslateY_BBox' : TranslateY_BBox,
+           
+       'Rotate_Only_BBoxes' : Rotate_Only_BBoxes, 'ShearX_Only_BBoxes' : ShearX_Only_BBoxes, 'ShearY_Only_BBoxes' : ShearY_Only_BBoxes,
+       'TranslateX_Only_BBoxes' : TranslateX_Only_BBoxes, 'TranslateY_Only_BBoxes' : TranslateY_Only_BBoxes, 'Flip_Only_BBoxes' : Flip_Only_BBoxes,
+       
+       'Equalize_Only_BBoxes' : Equalize_Only_BBoxes, 'Solarize_Only_BBoxes' : Solarize_Only_BBoxes,
+       
+       'BBox_Cutout' : BBox_Cutout, 'Cutout_Only_BBoxes' : Cutout_Only_BBoxes
+      }
+
+
+class Policy(torch.nn.Module):
+    def __init__(self, policy, pre_transform, post_transform):
+        super().__init__()
+        self.pre_transform = pre_transform
+        self.post_transform = post_transform
+        
+        if policy == 'policy_v0': self.policy = policy_v0()
+        elif policy == 'policy_v1': self.policy = policy_v1()
+        elif policy == 'policy_v2': self.policy = policy_v2()
+        elif policy == 'policy_v3': self.policy = policy_v3()
+        elif policy == 'policy_vtest': self.policy = policy_vtest()
+
+    def forward(self, image, bboxs):
+        policy_idx = random.randint(0, len(self.policy)-1)
+        policy_transform = self.pre_transform + self.policy[policy_idx] + self.post_transform
+        policy_transform = Compose(policy_transform)
+        image, bboxs = policy_transform(image, bboxs)
+        return image, bboxs
+    
+    
+def SubPolicy(f1, p1, m1, f2, p2, m2):
+    subpolicy = []
+    if f1 in ['AutoContrast', 'Equalize', 'Equalize_Only_BBoxes', 'Flip_Only_BBoxes']: subpolicy.append(Fun[f1](p1))
+    else: subpolicy.append(Fun[f1](p1, Mag[f1][m1]))
+    
+    if f2 in ['AutoContrast', 'Equalize', 'Equalize_Only_BBoxes', 'Flip_Only_BBoxes']: subpolicy.append(Fun[f2](p2))
+    else: subpolicy.append(Fun[f2](p2, Mag[f2][m2]))
+        
+    return subpolicy
+
+
+def SubPolicy3(f1, p1, m1, f2, p2, m2, f3, p3, m3):
+    subpolicy = []
+    if f1 in ['AutoContrast', 'Equalize', 'Equalize_Only_BBoxes', 'Flip_Only_BBoxes']: subpolicy.append(Fun[f1](p1))
+    else: subpolicy.append(Fun[f1](p1, Mag[f1][m1]))
+    
+    if f2 in ['AutoContrast', 'Equalize', 'Equalize_Only_BBoxes', 'Flip_Only_BBoxes']: subpolicy.append(Fun[f2](p2))
+    else: subpolicy.append(Fun[f2](p2, Mag[f2][m2]))
+        
+    if f3 in ['AutoContrast', 'Equalize', 'Equalize_Only_BBoxes', 'Flip_Only_BBoxes']: subpolicy.append(Fun[f3](p3))
+    else: subpolicy.append(Fun[f3](p3, Mag[f3][m3]))
+        
+    return subpolicy  
+    
+
 def policy_v0():
-    policy = [TranslateX_BBox(0.6, Mag['TranslateX_BBox']()[4]), Equalize(0.8), 
-              TranslateY_Only_BBoxes(0.2, Mag['TranslateY_Only_BBoxes']()[2]), Cutout(0.8, Mag['Cutout'][8]),
-              Sharpness(0.0, Mag['Sharpness'][8]), ShearX_BBox(0.4, Mag['ShearX_BBox']()[0]),
-              ShearY_BBox(1.0, Mag['ShearY_BBox']()[2]), TranslateY_Only_BBoxes(0.6, Mag['TranslateY_Only_BBoxes']()[6]),
-              Rotate_BBox(0.6, Mag['Rotate_BBox']()[10]), Color(1.0, Mag['Color'][6])]
+    policy = [SubPolicy('TranslateX_BBox', 0.6, 4,           'Equalize', 0.8, None),
+              SubPolicy('TranslateY_Only_BBoxes', 0.2, 2,    'Cutout', 0.8, 8),
+              SubPolicy('Sharpness', 0.0, 8,                 'ShearX_BBox', 0.4, 0),
+              SubPolicy('ShearY_BBox', 1.0, 2,               'TranslateY_Only_BBoxes', 0.6, 6),
+              SubPolicy('Rotate_BBox', 0.6, 10,              'Color', 1.0, 6)]
     return policy
 
 
 def policy_v1():
-    policy = [TranslateX_BBox(0.6, Mag['TranslateX_BBox']()[4]), Equalize(0.8),
-              TranslateY_Only_BBoxes(0.2, Mag['TranslateY_Only_BBoxes']()[2]), Cutout(0.8, Mag['Cutout'][8]),
-              Sharpness(0.0, Mag['Sharpness'][8]), ShearX_BBox(0.4, Mag['ShearX_BBox']()[0]),
-              ShearY_BBox(1.0, Mag['ShearY_BBox']()[2]), TranslateY_Only_BBoxes(0.6, Mag['TranslateY_Only_BBoxes']()[6]),
-              Rotate_BBox(0.6, Mag['Rotate_BBox']()[10]), Color(1.0, Mag['Color'][6]),
-              Color(0.0, Mag['Color'][0]), ShearX_Only_BBoxes(0.8, Mag['ShearX_Only_BBoxes']()[4]),
-              ShearY_Only_BBoxes(0.8, Mag['ShearY_Only_BBoxes']()[2]), Flip_Only_BBoxes(0.0),
-              Equalize(0.6), TranslateX_BBox(0.2, Mag['TranslateX_BBox']()[2]),
-              Color(1.0, Mag['Color'][10]), TranslateY_Only_BBoxes(0.4, Mag['TranslateY_Only_BBoxes']()[6]),
-              Rotate_BBox(0.8, Mag['Rotate_BBox']()[10]), Contrast(0.0, Mag['Contrast'][10]),
-              Cutout(0.2, Mag['Cutout'][2]), Brightness(0.8, Mag['Brightness'][10]),
-              Color(1.0, Mag['Color'][6]), Equalize(1.0),
-              Cutout_Only_BBoxes(0.4, Mag['Cutout_Only_BBoxes'][6]), TranslateY_Only_BBoxes(0.8, Mag['TranslateY_Only_BBoxes']()[2]),
-              Color(0.2, Mag['Color'][8]), Rotate_BBox(0.8, Mag['Rotate_BBox']()[10]),
-              Sharpness(0.4, Mag['Sharpness'][4]), TranslateY_Only_BBoxes(0.0, Mag['TranslateY_Only_BBoxes']()[4]),
-              Sharpness(1.0, Mag['Sharpness'][4]), SolarizeAdd(0.4, Mag['SolarizeAdd'][4]),
-              Rotate_BBox(1.0, Mag['Rotate_BBox']()[8]), Sharpness(0.2, Mag['Sharpness'][8]),
-              ShearY_BBox(0.6, Mag['ShearY_BBox']()[10]), Equalize_Only_BBoxes(0.6),
-              ShearX_BBox(0.2, Mag['ShearX_BBox']()[6]), TranslateY_Only_BBoxes(0.2, Mag['TranslateY_Only_BBoxes']()[10]),
-              SolarizeAdd(0.6, Mag['SolarizeAdd'][8]), Brightness(0.8, Mag['Brightness'][10])]
+    policy = [SubPolicy('TranslateX_BBox', 0.6, 4,           'Equalize', 0.8, None),
+              SubPolicy('TranslateY_Only_BBoxes', 0.2, 2,    'Cutout', 0.8, 8),
+              SubPolicy('Sharpness', 0, 8,                   'ShearX_BBox', 0.4, 0),
+              SubPolicy('ShearY_BBox', 1.0, 2,               'TranslateY_Only_BBoxes', 0.6, 6),
+              SubPolicy('Rotate_BBox', 0.6, 10,              'Color', 1.0, 6),
+              SubPolicy('Color', 0.0, 0,                     'ShearX_Only_BBoxes', 0.8, 4),
+              SubPolicy('ShearY_Only_BBoxes', 0.8, 2,        'Flip_Only_BBoxes', 0.0, None),
+              SubPolicy('Equalize', 0.6, None,               'TranslateX_BBox', 0.2, 2),
+              SubPolicy('Color', 1.0, 10,                    'TranslateY_Only_BBoxes', 0.4, 6),
+              SubPolicy('Rotate_BBox', 0.8, 10,              'Contrast', 0.0, 10),
+              SubPolicy('Cutout', 0.2, 2,                    'Brightness', 0.8, 10),
+              SubPolicy('Color', 1.0, 6,                     'Equalize', 1.0, None),
+              SubPolicy('Cutout_Only_BBoxes', 0.4, 6,        'TranslateY_Only_BBoxes', 0.8, 2),
+              SubPolicy('Color', 0.2, 8,                     'Rotate_BBox', 0.8, 10),
+              SubPolicy('Sharpness', 0.4, 4,                 'TranslateY_Only_BBoxes', 0.0, 4),
+              SubPolicy('Sharpness', 1.0, 4,                 'SolarizeAdd', 0.4, 4),
+              SubPolicy('Rotate_BBox', 1.0, 8,               'Sharpness', 0.2, 8),
+              SubPolicy('ShearY_BBox', 0.6, 10,              'Equalize_Only_BBoxes', 0.6, None),
+              SubPolicy('ShearX_BBox', 0.2, 6,               'TranslateY_Only_BBoxes', 0.2, 10),
+              SubPolicy('SolarizeAdd', 0.6, 8,               'Brightness', 0.8, 10)]
     return policy
 
 
 def policy_vtest():
-    policy = [TranslateX_BBox(1.0, Mag['TranslateX_BBox']()[4]), Equalize(1.0)]
+    policy = [SubPolicy('TranslateX_BBox', 1.0, 4,           'Equalize', 1.0, None)]
     return policy
 
 
 def policy_v2():
-    policy = [Color(0.0, Mag['Color'][6]), Cutout(0.6, Mag['Cutout'][8]), Sharpness(0.4, Mag['Sharpness'][8]),
-              Rotate_BBox(0.4, Mag['Rotate_BBox']()[8]), Sharpness(0.4, Mag['Sharpness'][2]), Rotate_BBox(0.8, Mag['Rotate_BBox']()[10]), 
-              TranslateY_BBox(1.0, Mag['TranslateY_BBox']()[8]), AutoContrast(0.8),
-              AutoContrast(0.4), ShearX_BBox(0.8, Mag['ShearX_BBox']()[8]), Brightness(0.0, Mag['Brightness'][10]),
-              SolarizeAdd(0.2, Mag['SolarizeAdd'][6]), Contrast(0.0, Mag['Contrast'][10]), AutoContrast(0.6), 
-              Cutout(0.2, Mag['Cutout'][0]), Solarize(0.8, Mag['Solarize'][8]), Color(1.0, Mag['Color'][4]), 
-              TranslateY_BBox(0.0, Mag['TranslateY_BBox']()[4]), Equalize(0.6), Solarize(0.0, Mag['Solarize'][10]), 
-              TranslateY_BBox(0.2, Mag['TranslateY_BBox']()[2]), ShearY_BBox(0.8, Mag['ShearY_BBox']()[8]), Rotate_BBox(0.8, Mag['Rotate_BBox']()[8]), 
-              Cutout(0.8, Mag['Cutout'][8]), Brightness(0.8, Mag['Brightness'][8]), Cutout(0.2, Mag['Cutout'][2]),
-              Color(0.8, Mag['Color'][4]), TranslateY_BBox(1.0, Mag['TranslateY_BBox']()[6]), Rotate_BBox(0.6, Mag['Rotate_BBox']()[6]), 
-              Rotate_BBox(0.6, Mag['Rotate_BBox']()[10]), BBox_Cutout(1.0, Mag['BBox_Cutout'][4]), Cutout(0.2, Mag['Cutout'][8]), 
-              Rotate_BBox(0.0, Mag['Rotate_BBox']()[0]), Equalize(0.6), ShearY_BBox(0.6, Mag['ShearY_BBox']()[8]), 
-              Brightness(0.8, Mag['Brightness'][8]), AutoContrast(0.4), Brightness(0.2, Mag['Brightness'][2]), 
-              TranslateY_BBox(0.4, Mag['TranslateY_BBox']()[8]), Solarize(0.4, Mag['Solarize'][6]), SolarizeAdd(0.2, Mag['SolarizeAdd'][10]), 
-              Contrast(1.0, Mag['Contrast'][10]), SolarizeAdd(0.2, Mag['SolarizeAdd'][8]), Equalize(0.2)]
+    policy = [SubPolicy3('Color', 0.0, 6,                    'Cutout', 0.6, 8,                 'Sharpness', 0.4, 8),
+              SubPolicy3('Rotate_BBox', 0.4, 8,              'Sharpness', 0.4, 2,              'Rotate_BBox', 0.8, 10),
+              SubPolicy('TranslateY_BBox', 1.0, 8,           'AutoContrast', 0.8, None),
+              SubPolicy3('AutoContrast', 0.4, None,          'ShearX_BBox', 0.8, 8,            'Brightness', 0.0, 10),
+              SubPolicy3('SolarizeAdd', 0.2, 6,              'Contrast', 0.0, 10,              'AutoContrast', 0.6, None),
+              SubPolicy3('Cutout', 0.2, 0,                   'Solarize', 0.8, 8,               'Color', 1.0, 4),
+              SubPolicy3('TranslateY_BBox', 0.0, 4,          'Equalize', 0.6, None,            'Solarize', 0.0, 10),
+              SubPolicy3('TranslateY_BBox', 0.2, 2,          'ShearY_BBox', 0.8, 8,            'Rotate_BBox', 0.8, 8),
+              SubPolicy3('Cutout', 0.8, 8,                   'Brightness', 0.8, 8,             'Cutout', 0.2, 2),
+              SubPolicy3('Color', 0.8, 4,                    'TranslateY_BBox', 1.0, 6,        'Rotate_BBox', 0.6, 6),
+              SubPolicy3('Rotate_BBox', 0.6, 10,             'BBox_Cutout', 1.0, 4,            'Cutout', 0.2, 8),
+              SubPolicy3('Rotate_BBox', 0.0, 0,              'Equalize', 0.6, None,            'ShearY_BBox', 0.6, 8),
+              SubPolicy3('Brightness', 0.8, 8,               'AutoContrast', 0.4, None,        'Brightness', 0.2, 2),
+              SubPolicy3('TranslateY_BBox', 0.4, 8,          'Solarize', 0.4, 6,               'SolarizeAdd', 0.2, 10),
+              SubPolicy3('Contrast', 1.0, 10,                'SolarizeAdd', 0.2, 8,            'Equalize', 0.2, None)]
     return policy
 
-
+              
 def policy_v3():
-    policy = [Posterize(0.8, Mag['Posterize'][2]), TranslateX_BBox(1.0, Mag['TranslateX_BBox']()[8]), 
-              BBox_Cutout(0.2, Mag['BBox_Cutout'][10]), Sharpness(1.0, Mag['Sharpness'][8]), 
-              Rotate_BBox(0.6, Mag['Rotate_BBox']()[8]), Rotate_BBox(0.8, Mag['Rotate_BBox']()[10]), 
-              Equalize(0.8), AutoContrast(0.2),
-              SolarizeAdd(0.2, Mag['SolarizeAdd'][2]), TranslateY_BBox(0.2, Mag['TranslateY_BBox']()[8]), 
-              Sharpness(0.0, Mag['Sharpness'][2]), Color(0.4, Mag['Color'][8]), 
-              Equalize(1.0), TranslateY_BBox(1.0, Mag['TranslateY_BBox']()[8]), 
-              Posterize(0.6, Mag['Posterize'][2]), Rotate_BBox(0.0, Mag['Rotate_BBox']()[10]), 
-              AutoContrast(0.6), Rotate_BBox(1.0, Mag['Rotate_BBox']()[6]), 
-              Equalize(0.0), Cutout(0.8, Mag['Cutout'][10]), 
-              Brightness(1.0, Mag['Brightness'][2]), TranslateY_BBox(1.0, Mag['TranslateY_BBox']()[6]), 
-              Contrast(0.0, Mag['Contrast'][2]), ShearY_BBox(0.8, Mag['ShearY_BBox']()[0]), 
-              AutoContrast(0.8), Contrast(0.2, Mag['Contrast'][10]), 
-              Rotate_BBox(1.0, Mag['Rotate_BBox']()[10]), Cutout(1.0, Mag['Cutout'][10]), 
-              SolarizeAdd(0.8, Mag['SolarizeAdd'][6]), Equalize(0.8)]
+    policy = [SubPolicy('Posterize', 0.8, 2,                 'TranslateX_BBox', 1.0, 8),
+              SubPolicy('BBox_Cutout', 0.2, 10,              'Sharpness', 1.0, 8),
+              SubPolicy('Rotate_BBox', 0.6, 8,               'Rotate_BBox', 0.8, 10),
+              SubPolicy('Equalize', 0.8, None,               'AutoContrast', 0.2, None),
+              SubPolicy('SolarizeAdd', 0.2, 2,               'TranslateY_BBox', 0.2, 8),
+              SubPolicy('Sharpness', 0.0, 2,                 'Color', 0.4, 8),
+              SubPolicy('Equalize', 1.0, None,               'TranslateY_BBox', 1.0, 8),
+              SubPolicy('Posterize', 0.6, 2,                 'Rotate_BBox', 0.0, 10),
+              SubPolicy('AutoContrast', 0.6, None,           'Rotate_BBox', 1.0, 6),
+              SubPolicy('Equalize', 0.0, None,               'Cutout', 0.8, 10),
+              SubPolicy('Brightness', 1.0, 2,                'TranslateY_BBox', 1.0, 6),
+              SubPolicy('Contrast', 0.0, 2,                  'ShearY_BBox', 0.8, 0),
+              SubPolicy('AutoContrast', 0.8, None,           'Contrast', 0.2, 10),
+              SubPolicy('Rotate_BBox', 1.0, 10,              'Cutout', 1.0, 10),
+              SubPolicy('SolarizeAdd', 0.8, 6,               'Equalize', 0.8, None)]
     return policy
