@@ -41,7 +41,7 @@ Docker Image
 
 #### 2.4. Other Augmentation
 ![Other Augmentation](./Figures/etc_0.png)
-![Other Augmentation](./Figures/etc_0.png)
+![Other Augmentation](./Figures/etc_1.png)
 
 #### 2.4. Policy
 ![Policy](./Figures/policy_0.png)
