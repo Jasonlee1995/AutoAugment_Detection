@@ -231,13 +231,15 @@ class Rotate_BBox(torch.nn.Module):
     Assume the coords are given min_x, min_y, max_x, max_y.
     Both applied to image and bboxes.
     """
-    def __init__(self, p, degrees, replace=128):
+    def __init__(self, p, degrees, replace=128, minus=True):
         super().__init__()
         self.p = p
         self.degrees = degrees
         self.replace = replace
+        self.minus = minus
 
     def forward(self, image, bboxs):
+        if self.minus and (torch.rand(1) < 0.5): self.degrees *= -1
         if torch.rand(1) < self.p:
             rotate_image = image.rotate(self.degrees, fillcolor=(self.replace, self.replace, self.replace))
             if bboxs == None:
@@ -257,13 +259,15 @@ class ShearX_BBox(torch.nn.Module):
     Assume the coords are given min_x, min_y, max_x, max_y.
     Both applied to image and bboxes.
     """
-    def __init__(self, p, level, replace=128):
+    def __init__(self, p, level, replace=128, minus=True):
         super().__init__()
         self.p = p
         self.level = level
         self.replace = replace
+        self.minus = minus
 
     def forward(self, image, bboxs):
+        if self.minus and (torch.rand(1) < 0.5): self.level *= -1
         if (torch.rand(1) < self.p) and (bboxs != None):
             shear_image = image.transform(image.size, Image.AFFINE, (1, self.level, 0, 0, 1, 0), fillcolor=(self.replace, self.replace, self.replace))
             if bboxs == None:
@@ -283,13 +287,15 @@ class ShearY_BBox(torch.nn.Module):
     Assume the coords are given min_x, min_y, max_x, max_y.
     Both applied to image and bboxes.
     """
-    def __init__(self, p, level, replace=128):
+    def __init__(self, p, level, replace=128, minus=True):
         super().__init__()
         self.p = p
         self.level = level
         self.replace = replace
+        self.minus = minus
 
     def forward(self, image, bboxs):
+        if self.minus and (torch.rand(1) < 0.5): self.level *= -1
         if torch.rand(1) < self.p:
             shear_image = image.transform(image.size, Image.AFFINE, (1, 0, 0, self.level, 1, 0), fillcolor=(self.replace, self.replace, self.replace))
             if bboxs == None:
@@ -308,13 +314,15 @@ class TranslateX_BBox(torch.nn.Module):
     Assume the coords are given min_x, min_y, max_x, max_y.
     Both applied to image and bboxes.
     """
-    def __init__(self, p, pixels, replace=128):
+    def __init__(self, p, pixels, replace=128, minus=True):
         super().__init__()
         self.p = p
         self.pixels = pixels
         self.replace = replace
+        self.minus = minus
 
     def forward(self, image, bboxs):
+        if self.minus and (torch.rand(1) < 0.5): self.pixels *= -1
         if torch.rand(1) < self.p:
             translate_image = image.transform(image.size, Image.AFFINE, (1, 0, -self.pixels, 0, 1, 0), fillcolor=(self.replace, self.replace, self.replace))
             if bboxs == None:
@@ -333,13 +341,15 @@ class TranslateY_BBox(torch.nn.Module):
     Assume the coords are given min_x, min_y, max_x, max_y.
     Both applied to image and bboxes.
     """
-    def __init__(self, p, pixels, replace=128):
+    def __init__(self, p, pixels, replace=128, minus=True):
         super().__init__()
         self.p = p
         self.pixels = pixels
         self.replace = replace
+        self.minus = minus
 
     def forward(self, image, bboxs):
+        if self.minus and (torch.rand(1) < 0.5): self.pixels *= -1
         if torch.rand(1) < self.p:
             translate_image = image.transform(image.size, Image.AFFINE, (1, 0, 0, 0, 1, -self.pixels), fillcolor=(self.replace, self.replace, self.replace))
             if bboxs == None:
@@ -418,13 +428,15 @@ class Rotate_Only_BBoxes(torch.nn.Module):
     Assume the coords are given min_x, min_y, max_x, max_y.
     Only applied to image not bboxes.
     """
-    def __init__(self, p, degrees, replace=128):
+    def __init__(self, p, degrees, replace=128, minus=True):
         super().__init__()
         self.p = p/3
         self.degrees = degrees
         self.replace = replace
+        self.minus = minus
 
     def forward(self, image, bboxs):
+        if self.minus and (torch.rand(1) < 0.5): self.degrees *= -1
         if bboxs == None:
             return image, bboxs
         else:
@@ -438,13 +450,15 @@ class ShearX_Only_BBoxes(torch.nn.Module):
     Assume the coords are given min_x, min_y, max_x, max_y.
     Only applied to image not bboxes.
     """
-    def __init__(self, p, level, replace=128):
+    def __init__(self, p, level, replace=128, minus=True):
         super().__init__()
         self.p = p/3
         self.level = level
         self.replace = replace
+        self.minus = minus
 
     def forward(self, image, bboxs):
+        if self.minus and (torch.rand(1) < 0.5): self.level *= -1
         if bboxs == None:
             return image, bboxs
         else:
@@ -458,13 +472,15 @@ class ShearY_Only_BBoxes(torch.nn.Module):
     Assume the coords are given min_x, min_y, max_x, max_y.
     Only applied to image not bboxes.
     """
-    def __init__(self, p, level, replace=128):
+    def __init__(self, p, level, replace=128, minus=True):
         super().__init__()
         self.p = p/3
         self.level = level
         self.replace = replace
+        self.minus = minus
 
     def forward(self, image, bboxs):
+        if self.minus and (torch.rand(1) < 0.5): self.level *= -1
         if bboxs == None:
             return image, bboxs
         else:
@@ -478,13 +494,15 @@ class TranslateX_Only_BBoxes(torch.nn.Module):
     Assume the coords are given min_x, min_y, max_x, max_y.
     Only applied to image not bboxes.
     """
-    def __init__(self, p, pixels, replace=128):
+    def __init__(self, p, pixels, replace=128, minus=True):
         super().__init__()
         self.p = p/3
         self.pixels = pixels
         self.replace = replace
+        self.minus = minus
 
     def forward(self, image, bboxs):
+        if self.minus and (torch.rand(1) < 0.5): self.pixels *= -1
         if bboxs == None:
             return image, bboxs
         else:
@@ -498,13 +516,15 @@ class TranslateY_Only_BBoxes(torch.nn.Module):
     Assume the coords are given min_x, min_y, max_x, max_y.
     Only applied to image not bboxes.
     """
-    def __init__(self, p, pixels, replace=128):
+    def __init__(self, p, pixels, replace=128, minus=True):
         super().__init__()
         self.p = p/3
         self.pixels = pixels
         self.replace = replace
+        self.minus = minus
 
     def forward(self, image, bboxs):
+        if self.minus and (torch.rand(1) < 0.5): self.pixels *= -1
         if bboxs == None:
             return image, bboxs
         else:
