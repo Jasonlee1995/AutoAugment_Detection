@@ -211,34 +211,30 @@ def flip_only_bboxes(img, bboxs, p):
 
 def solarize_only_bboxes(img, bboxs, p, threshold):
     img = F.pil_to_tensor(img)
-    solarize_img = torch.zeros_like(img)
-    
     for bbox in bboxs:
         if torch.rand(1) < p:
             min_x, min_y, max_x, max_y = bbox
             min_x, min_y, max_x, max_y = int(min_x.item()), int(min_y.item()), int(max_x.item()), int(max_y.item())
-            solarize_img[:, min_y:max_y+1, min_x:max_x+1] = img[:, min_y:max_y+1, min_x:max_x+1]
-    
-    solarize_img = F.to_pil_image(solarize_img)
-    solarize_img = ImageOps.solarize(solarize_img, threshold=threshold)
-    solarize_img = F.pil_to_tensor(solarize_img)
-    return F.to_pil_image(torch.where(solarize_img != 0, solarize_img, img))
+            solarize_img = img[:, min_y:max_y+1, min_x:max_x+1]
+            solarize_img = F.to_pil_image(solarize_img)
+            solarize_img = ImageOps.solarize(solarize_img, threshold=threshold)
+            solarize_img = F.pil_to_tensor(solarize_img)
+            img[:, min_y:max_y+1, min_x:max_x+1] = solarize_img
+    return F.to_pil_image(img)
 
 
 def equalize_only_bboxes(img, bboxs, p):
     img = F.pil_to_tensor(img)
-    equalize_img = torch.zeros_like(img)
-    
     for bbox in bboxs:
         if torch.rand(1) < p:
             min_x, min_y, max_x, max_y = bbox
             min_x, min_y, max_x, max_y = int(min_x.item()), int(min_y.item()), int(max_x.item()), int(max_y.item())
-            equalize_img[:, min_y:max_y+1, min_x:max_x+1] = img[:, min_y:max_y+1, min_x:max_x+1]
-    
-    equalize_img = F.to_pil_image(equalize_img)
-    equalize_img = ImageOps.equalize(equalize_img)
-    equalize_img = F.pil_to_tensor(equalize_img)
-    return F.to_pil_image(torch.where(equalize_img != 0, equalize_img, img))
+            equalize_img = img[:, min_y:max_y+1, min_x:max_x+1]
+            equalize_img = F.to_pil_image(equalize_img)
+            equalize_img = ImageOps.equalize(equalize_img)
+            equalize_img = F.pil_to_tensor(equalize_img)
+            img[:, min_y:max_y+1, min_x:max_x+1] = equalize_img
+    return F.to_pil_image(img)
 
 
 def cutout_only_bboxes(img, bboxs, p, pad_size, replace):

@@ -4,18 +4,18 @@ from augmentation import *
 
 M = 10
 
-color_range = torch.arange(0.1, 1.9+1e-10, (1.9-0.1)/M).tolist()
-rotate_range = torch.arange(0, 30+1e-10, (30-0)/M).tolist()
-shear_range = torch.arange(0, 0.3+1e-10, (0.3-0)/M).tolist()
-translate_range = torch.arange(0, 250+1e-10, (250-0)/M).tolist()
-translate_bbox_range = torch.arange(0, 120+1e-10, (120-0)/M).tolist()
+color_range = torch.arange(0, 0.9+1e-8, (0.9-0)/M).tolist()
+rotate_range = torch.arange(0, 30+1e-8, (30-0)/M).tolist()
+shear_range = torch.arange(0, 0.3+1e-8, (0.3-0)/M).tolist()
+translate_range = torch.arange(0, 250+1e-8, (250-0)/M).tolist()
+translate_bbox_range = torch.arange(0, 120+1e-8, (120-0)/M).tolist()
 
 
 Mag = {'Brightness' : color_range, 'Color' : color_range, 'Contrast' : color_range, 
-       'Posterize' : torch.arange(4, 8+1e-10, (8-4)/M).tolist(), 'Sharpness' : color_range, 
-       'Solarize' : torch.arange(0, 256+1e-10, (256-0)/M).tolist(), 'SolarizeAdd' : torch.arange(0, 110+1e-10, (110-0)/M).tolist(),
+       'Posterize' : torch.arange(4, 8+1e-8, (8-4)/M).tolist()[::-1], 'Sharpness' : color_range, 
+       'Solarize' : torch.arange(0, 256+1e-8, (256-0)/M).tolist()[::-1], 'SolarizeAdd' : torch.arange(0, 110+1e-8, (110-0)/M).tolist(),
        
-       'Cutout' : torch.arange(0, 100+1e-10, (100-0)/M).tolist(),
+       'Cutout' : torch.arange(0, 100+1e-8, (100-0)/M).tolist(),
        
        'Rotate_BBox' : rotate_range, 'ShearX_BBox' : shear_range, 'ShearY_BBox' : shear_range,
        'TranslateX_BBox' : translate_range, 'TranslateY_BBox' : translate_range,
@@ -23,9 +23,9 @@ Mag = {'Brightness' : color_range, 'Color' : color_range, 'Contrast' : color_ran
        'Rotate_Only_BBoxes' : rotate_range, 'ShearX_Only_BBoxes' : shear_range, 'ShearY_Only_BBoxes' : shear_range,
        'TranslateX_Only_BBoxes' : translate_bbox_range, 'TranslateY_Only_BBoxes' : translate_bbox_range,
        
-       'Solarize_Only_BBoxes' : torch.arange(0, 256+1e-10, (256-0)/M).tolist(),
+       'Solarize_Only_BBoxes' : torch.arange(0, 256+1e-8, (256-0)/M).tolist()[::-1],
        
-       'BBox_Cutout' : torch.arange(0, 0.75+1e-10, (0.75-0)/M).tolist(), 'Cutout_Only_BBoxes' : torch.arange(0, 50+1e-10, (50-0)/M).tolist()
+       'BBox_Cutout' : torch.arange(0, 0.75+1e-8, (0.75-0)/M).tolist(), 'Cutout_Only_BBoxes' : torch.arange(0, 50+1e-8, (50-0)/M).tolist()
       }
 
 

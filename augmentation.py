@@ -82,14 +82,16 @@ class Brightness(torch.nn.Module):
     Adjust image brightness using magnitude.
     Only applied to image, not bboxes.
     """
-    def __init__(self, p, magnitude):
+    def __init__(self, p, magnitude, minus=True):
         super().__init__()
         self.p = p
         self.magnitude = magnitude
+        self.minus = minus
 
     def forward(self, image, bboxs):
+        if self.minus and (torch.rand(1) < 0.5): self.magnitude *= -1
         if torch.rand(1) < self.p:
-            brightness_image = functional.brightness(image, self.magnitude)
+            brightness_image = functional.brightness(image, 1+self.magnitude)
             return brightness_image, bboxs
         else:
             return image, bboxs
@@ -100,14 +102,16 @@ class Color(torch.nn.Module):
     Adjust image color balance using magnitude.
     Only applied to image, not bboxes.
     """
-    def __init__(self, p, magnitude):
+    def __init__(self, p, magnitude, minus=True):
         super().__init__()
         self.p = p
         self.magnitude = magnitude
+        self.minus = minus
 
     def forward(self, image, bboxs):
+        if self.minus and (torch.rand(1) < 0.5): self.magnitude *= -1
         if torch.rand(1) < self.p:
-            color_image = functional.color(image, self.magnitude)
+            color_image = functional.color(image, 1+self.magnitude)
             return color_image, bboxs
         else:
             return image, bboxs
@@ -118,14 +122,16 @@ class Contrast(torch.nn.Module):
     Adjust image contrast using magnitude.
     Only applied to image, not bboxes.
     """
-    def __init__(self, p, magnitude):
+    def __init__(self, p, magnitude, minus=True):
         super().__init__()
         self.p = p
         self.magnitude = magnitude
+        self.minus = minus
 
     def forward(self, image, bboxs):
+        if self.minus and (torch.rand(1) < 0.5): self.magnitude *= -1
         if torch.rand(1) < self.p:
-            contrast_image = functional.contrast(image, self.magnitude)
+            contrast_image = functional.contrast(image, 1+self.magnitude)
             return contrast_image, bboxs
         else:
             return image, bboxs
@@ -171,14 +177,16 @@ class Sharpness(torch.nn.Module):
     Adjust image sharpness using magnitude.
     Only applied to image, not bboxes.
     """
-    def __init__(self, p, magnitude):
+    def __init__(self, p, magnitude, minus=True):
         super().__init__()
         self.p = p
         self.magnitude = magnitude
+        self.minus = minus
 
     def forward(self, image, bboxs):
+        if self.minus and (torch.rand(1) < 0.5): self.magnitude *= -1
         if torch.rand(1) < self.p:
-            sharpness_image = functional.sharpness(image, self.magnitude)
+            sharpness_image = functional.sharpness(image, 1+self.magnitude)
             return sharpness_image, bboxs
         else:
             return image, bboxs
