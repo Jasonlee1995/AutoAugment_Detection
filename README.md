@@ -18,12 +18,20 @@ Docker Image
 - Visualize - Bounding Box Geometric Augmentation.ipynb : experiments of bounding box geometric augmentation
 - Visualize - Color Augmentation.ipynb : experiments of color augmentation
 - Visualize - Geometric Augmentation.ipynb : experiments of geometric augmentation
+- Visualize - Magnitude Check.ipynb : experiments for checking Magnitude is right
 - Visualize - Other Augmentation.ipynb : experiments of left augmentation
 - Visualize - Policy.ipynb : experiments of policy
 - Details
   * range are different so just followed the official code not the paper
+  * some of the range are fixed cause of mismatch with magnitude
+    * range 0.1 ~ 1.9 for color operation (Color, Contrast, Brightness, Sharpness)
+    * but 1 is the default (original image)
+    * so in this repo, I code like below
+      * instead using 0.1 ~ 1.9, use 0 ~ 0.9 with random change (0.5 probability)
+      * e.g.) 0.9 was chosen randomly minus the value (0.9 or -0.9) and add with 1 (1.9 or 0.1)
   * do not use numpy nor opencv for speed and preventing version crashes
   * similar design pattern following torchvision transforms code
+  * some of the codes can be improved but not considered in this repo (e.g. TranslateX_Only_BBoxes - translate considering bbox size not fixed pixel)
 
 
 ## 2. Results
@@ -43,9 +51,13 @@ Docker Image
 ![Other Augmentation](./Figures/etc_0.png)
 ![Other Augmentation](./Figures/etc_1.png)
 
-#### 2.4. Policy
+#### 2.5. Policy
 ![Policy](./Figures/policy_0.png)
 ![Policy](./Figures/policy_1.png)
+
+#### 2.6. Magnitude
+![Magnitude](./Figures/mag_0.png)
+![Magnitude](./Figures/mag_1.png)
 
 
 ## 3. Reference
