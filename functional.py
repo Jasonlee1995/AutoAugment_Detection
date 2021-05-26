@@ -5,11 +5,9 @@ from PIL import Image, ImageEnhance, ImageOps
 
 def solarize_add(img, addition, threshold):
     img = F.pil_to_tensor(img)
-    added_img = img + torch.tensor(addition, dtype=img.dtype, device=img.device)
+    added_img = img + addition
     added_img = torch.clamp(added_img, 0, 255)
-    bound = torch.tensor(255, dtype=img.dtype, device=img.device)
-    inverted_img = bound - added_img
-    return F.to_pil_image(torch.where(added_img >= threshold, inverted_img, added_img))
+    return F.to_pil_image(torch.where(img < threshold, added_img, img))
 
 
 def color(img, magnitude):
