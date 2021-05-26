@@ -212,7 +212,7 @@ class Solarize(torch.nn.Module):
 
 class SolarizeAdd(torch.nn.Module):
     """
-    Solarize the image by added all pixel values above a threshold.
+    Solarize the image by added image below a threshold.
     Parameter addition must be integer.
     Only applied to image, not bboxes.
     """
