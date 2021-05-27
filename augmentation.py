@@ -7,7 +7,7 @@ Mask Augmentation: Cutout
 
 Color Augmentation based on BBoxes: Equalize_Only_BBoxes, Solarize_Only_BBoxes
 
-Geometric Augmentation based on BBoxes: Rotate_Only_BBoxes, ShearX_Only_BBoxes, ShearY_Only_BBoxes,
+Geometric Augmentation based on BBoxes: Rotate_Only_BBoxes, ShearX_Only_BBoxes, ShearY_Only_BBoxes, 
                                         TranslateX_Only_BBoxes, TranslateY_Only_BBoxes, Flip_Only_BBoxes
 
 Mask Augmentation based on BBoxes: BBox_Cutout, Cutout_Only_BBoxes
@@ -42,8 +42,8 @@ class ToTensor:
     """
     def __call__(self, image, bboxs):
         return F.to_tensor(image), bboxs
-
-
+    
+    
 class Normalize(torch.nn.Module):
     """
     Normalize a tensor image with mean and standard deviation.
@@ -75,8 +75,8 @@ class AutoContrast(torch.nn.Module):
             return autocontrast_image, bboxs
         else:
             return image, bboxs
-
-
+    
+    
 class Brightness(torch.nn.Module):
     """
     Adjust image brightness using magnitude.
@@ -95,7 +95,7 @@ class Brightness(torch.nn.Module):
             return brightness_image, bboxs
         else:
             return image, bboxs
-
+        
 
 class Color(torch.nn.Module):
     """
@@ -115,8 +115,8 @@ class Color(torch.nn.Module):
             return color_image, bboxs
         else:
             return image, bboxs
-
-
+    
+    
 class Contrast(torch.nn.Module):
     """
     Adjust image contrast using magnitude.
@@ -136,7 +136,7 @@ class Contrast(torch.nn.Module):
         else:
             return image, bboxs
 
-
+        
 class Equalize(torch.nn.Module):
     """
     Equalize the histogram of the given image.
@@ -152,8 +152,8 @@ class Equalize(torch.nn.Module):
             return equalize_image, bboxs
         else:
             return image, bboxs
-
-
+    
+    
 class Posterize(torch.nn.Module):
     """
     Posterize the image by reducing the number of bits for each color channel.
@@ -170,7 +170,7 @@ class Posterize(torch.nn.Module):
             return posterize_image, bboxs
         else:
             return image, bboxs
-
+    
 
 class Sharpness(torch.nn.Module):
     """
@@ -190,8 +190,8 @@ class Sharpness(torch.nn.Module):
             return sharpness_image, bboxs
         else:
             return image, bboxs
-
-
+    
+    
 class Solarize(torch.nn.Module):
     """
     Solarize the image by inverting all pixel values above a threshold.
@@ -200,7 +200,7 @@ class Solarize(torch.nn.Module):
     def __init__(self, p, threshold):
         super().__init__()
         self.p = p
-        self.threshold = threshold
+        self.threshold = int(threshold)
 
     def forward(self, image, bboxs):
         if torch.rand(1) < self.p:
@@ -208,28 +208,31 @@ class Solarize(torch.nn.Module):
             return solarize_image, bboxs
         else:
             return image, bboxs
-
-
+    
+    
 class SolarizeAdd(torch.nn.Module):
     """
     Solarize the image by added image below a threshold.
+    Add addition amount to image and then clip the pixel value to 0~255 or 0~1.
     Parameter addition must be integer.
     Only applied to image, not bboxes.
     """
-    def __init__(self, p, addition, threshold=128):
+    def __init__(self, p, addition, threshold=128, minus=True):
         super().__init__()
         self.p = p
-        self.addition = addition
-        self.threshold = threshold
+        self.addition = int(addition)
+        self.threshold = int(threshold)
+        self.minus = minus
 
     def forward(self, image, bboxs):
+        if self.minus and (torch.rand(1) < 0.5): self.addition *= -1
         if torch.rand(1) < self.p:
             solarize_add_image = functional.solarize_add(image, self.addition, self.threshold)
             return solarize_add_image, bboxs
         else:
             return image, bboxs
-
-
+    
+    
 ### Geometric Augmentation
 class Rotate_BBox(torch.nn.Module):
     """
@@ -256,8 +259,8 @@ class Rotate_BBox(torch.nn.Module):
                 return rotate_image, rotate_bbox
         else:
             return image, bboxs
-
-
+        
+        
 class ShearX_BBox(torch.nn.Module):
     """
     Shear image and change bboxes on X-axis.
@@ -284,8 +287,8 @@ class ShearX_BBox(torch.nn.Module):
                 return shear_image, shear_bbox
         else:
             return image, bboxs
-
-
+        
+        
 class ShearY_BBox(torch.nn.Module):
     """
     Shear image and change bboxes on Y-axis.
@@ -312,8 +315,8 @@ class ShearY_BBox(torch.nn.Module):
                 return shear_image, shear_bbox
         else:
             return image, bboxs
-
-
+        
+        
 class TranslateX_BBox(torch.nn.Module):
     """
     Translate image and bboxes on X-axis.
@@ -324,7 +327,7 @@ class TranslateX_BBox(torch.nn.Module):
     def __init__(self, p, pixels, replace=128, minus=True):
         super().__init__()
         self.p = p
-        self.pixels = pixels
+        self.pixels = int(pixels)
         self.replace = replace
         self.minus = minus
 
@@ -339,8 +342,8 @@ class TranslateX_BBox(torch.nn.Module):
                 return translate_image, translate_bbox
         else:
             return image, bboxs
-
-
+    
+    
 class TranslateY_BBox(torch.nn.Module):
     """
     Translate image and bboxes on Y-axis.
@@ -351,7 +354,7 @@ class TranslateY_BBox(torch.nn.Module):
     def __init__(self, p, pixels, replace=128, minus=True):
         super().__init__()
         self.p = p
-        self.pixels = pixels
+        self.pixels = int(pixels)
         self.replace = replace
         self.minus = minus
 
@@ -366,8 +369,8 @@ class TranslateY_BBox(torch.nn.Module):
                 return translate_image, translate_bbox
         else:
             return image, bboxs
-
-
+    
+    
 ### Mask Augmentation
 class Cutout(torch.nn.Module):
     """
@@ -388,8 +391,8 @@ class Cutout(torch.nn.Module):
             return cutout_image, bboxs
         else:
             return image, bboxs
-
-
+    
+    
 ### Color Augmentation based on BBoxes
 class Equalize_Only_BBoxes(torch.nn.Module):
     """
@@ -407,8 +410,8 @@ class Equalize_Only_BBoxes(torch.nn.Module):
         else:
             equalize_image = functional.equalize_only_bboxes(image, bboxs, self.p)
             return equalize_image, bboxs
-
-
+        
+        
 class Solarize_Only_BBoxes(torch.nn.Module):
     """
     Apply solarize to each bboxes in the image with probability.
@@ -418,7 +421,7 @@ class Solarize_Only_BBoxes(torch.nn.Module):
     def __init__(self, p, threshold):
         super().__init__()
         self.p = p/3
-        self.threshold = threshold
+        self.threshold = int(threshold)
 
     def forward(self, image, bboxs):
         if bboxs == None:
@@ -426,8 +429,8 @@ class Solarize_Only_BBoxes(torch.nn.Module):
         else:
             solarize_image = functional.solarize_only_bboxes(image, bboxs, self.p, self.threshold)
             return solarize_image, bboxs
-
-
+    
+    
 ### Geometric Augmentation based on BBoxes
 class Rotate_Only_BBoxes(torch.nn.Module):
     """
@@ -449,8 +452,8 @@ class Rotate_Only_BBoxes(torch.nn.Module):
         else:
             rotate_image = functional.rotate_only_bboxes(image, bboxs, self.p, self.degrees, self.replace)
             return rotate_image, bboxs
-
-
+    
+    
 class ShearX_Only_BBoxes(torch.nn.Module):
     """
     Apply shear to each bboxes in the image with probability only on X-axis.
@@ -471,8 +474,8 @@ class ShearX_Only_BBoxes(torch.nn.Module):
         else:
             shear_image = functional.shear_only_bboxes(image, bboxs, self.p, self.level, self.replace, shift_horizontal=True)
             return shear_image, bboxs
-
-
+    
+    
 class ShearY_Only_BBoxes(torch.nn.Module):
     """
     Apply shear to each bboxes in the image with probability only on Y-axis.
@@ -493,8 +496,8 @@ class ShearY_Only_BBoxes(torch.nn.Module):
         else:
             shear_image = functional.shear_only_bboxes(image, bboxs, self.p, self.level, self.replace, shift_horizontal=False)
             return shear_image, bboxs
-
-
+    
+    
 class TranslateX_Only_BBoxes(torch.nn.Module):
     """
     Apply translation to each bboxes in the image with probability only on X-axis.
@@ -504,7 +507,7 @@ class TranslateX_Only_BBoxes(torch.nn.Module):
     def __init__(self, p, pixels, replace=128, minus=True):
         super().__init__()
         self.p = p/3
-        self.pixels = pixels
+        self.pixels = int(pixels)
         self.replace = replace
         self.minus = minus
 
@@ -515,8 +518,8 @@ class TranslateX_Only_BBoxes(torch.nn.Module):
         else:
             translate_image = functional.translate_only_bboxes(image, bboxs, self.p, self.pixels, self.replace, shift_horizontal=True)
             return translate_image, bboxs
-
-
+    
+    
 class TranslateY_Only_BBoxes(torch.nn.Module):
     """
     Apply transloation to each bboxes in the image with probability only on Y-axis.
@@ -526,7 +529,7 @@ class TranslateY_Only_BBoxes(torch.nn.Module):
     def __init__(self, p, pixels, replace=128, minus=True):
         super().__init__()
         self.p = p/3
-        self.pixels = pixels
+        self.pixels = int(pixels)
         self.replace = replace
         self.minus = minus
 
@@ -556,7 +559,7 @@ class Flip_Only_BBoxes(torch.nn.Module):
             flip_image = functional.flip_only_bboxes(image, bboxs, self.p)
             return flip_image, bboxs
 
-
+    
 ### Mask Augmentation based on BBoxes
 class BBox_Cutout(torch.nn.Module):
     """
@@ -587,7 +590,7 @@ class Cutout_Only_BBoxes(torch.nn.Module):
     def __init__(self, p, pad_size, replace=128):
         super().__init__()
         self.p = p/3
-        self.pad_size = pad_size
+        self.pad_size = int(pad_size)
         self.replace = replace
 
     def forward(self, image, bboxs):
